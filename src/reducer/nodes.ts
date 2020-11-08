@@ -12,7 +12,7 @@ import {
 } from "react";
 
 import { MASK_PART } from "../component/Widget";
-
+import immutableSplice from "../lib/immutableSplice";
 export enum NODE_TYPE {
     LAYOUT_NODE = "LAYOUT_NODE",
     WIDGET_NODE = "WIDGET_NODE",
@@ -268,6 +268,7 @@ const replaceNode = (
     replaceNodeId: string,
     keepOffset: boolean = true
 ): EntityState<INode> => {
+    console.debug("[Info] replaceNode", searchNodeId, replaceNodeId);
     let nextState = state;
     const searchNode = selectById(nextState, searchNodeId);
     if (searchNode?.parentId != null) {
@@ -288,9 +289,9 @@ const replaceNode = (
                     {
                         id: searchNode.parentId,
                         changes: {
-                            children: parent.children.splice(
+                            children: immutableSplice(
+                                parent.children,
                                 index,
-                                0,
                                 replaceNodeId
                             ),
                         },
@@ -317,9 +318,13 @@ const shakeTree = (
         }, nextState);
 
         node = selectById(nextState, nodeId);
+        console.debug("[Info] shakeTree", nodeId);
         if (node?.children != null) {
+            let parent = selectById(nextState, node.parentId);
+
             if (
                 node.children.length === 1 &&
+                parent?.children?.length === 1 &&
                 node.id !== "root" &&
                 node.type === NODE_TYPE.LAYOUT_NODE
             ) {
@@ -333,8 +338,6 @@ const shakeTree = (
             ) {
                 nextState = removeNode(nextState, nodeId);
             }
-
-            const parent = selectById(nextState, node.parentId);
 
             if (
                 node.type === NODE_TYPE.LAYOUT_NODE &&
@@ -354,6 +357,42 @@ const shakeTree = (
                     id: node.parentId,
                     changes: {
                         children: node.children,
+                        direction: node.direction,
+                    },
+                });
+            }
+
+            if (
+                node.type === NODE_TYPE.LAYOUT_NODE &&
+                parent?.type === NODE_TYPE.LAYOUT_NODE &&
+                parent.children?.length !== 1 &&
+                node.direction === parent.direction
+            ) {
+                const index = parent.children?.findIndex(
+                    (childId) => childId === nodeId
+                )!;
+                console.log(node.id, node.parentId, index);
+
+                nextState = removeNode(nextState, nodeId);
+                nextState = node.children?.reduce((prevState, childId) => {
+                    return adapter.updateOne(prevState, {
+                        id: childId,
+                        changes: {
+                            parentId: node?.parentId,
+                        },
+                    });
+                }, nextState);
+
+                parent = selectById(nextState, node.parentId);
+
+                nextState = adapter.updateOne(nextState, {
+                    id: node.parentId,
+                    changes: {
+                        children: immutableSplice(
+                            parent?.children!,
+                            index,
+                            node.children
+                        ),
                         direction: node.direction,
                     },
                 });
