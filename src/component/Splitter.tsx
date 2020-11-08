@@ -2,15 +2,15 @@ import interact from "interactjs";
 import lodash from "lodash";
 import React, {
     CSSProperties,
-    useContext,
     useEffect,
     useMemo,
     useRef,
     useState,
 } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
+import { RootState } from "../reducer";
 import { DIRECTION, selectById, updateMany } from "../reducer/nodes";
-import { context } from "./Provider";
 
 const Splitter = (props: {
     parentId: string;
@@ -18,7 +18,8 @@ const Splitter = (props: {
     secondaryId: string;
 }) => {
     const { parentId, primaryId, secondaryId } = props;
-    const [nodes, dispatch] = useContext(context)!;
+    const nodes = useSelector((state: RootState) => state.nodes);
+    const dispatch = useDispatch();
 
     const [movingOffset, setMovingOffset] = useState(0);
     const [dragging, setDragging] = useState(false);

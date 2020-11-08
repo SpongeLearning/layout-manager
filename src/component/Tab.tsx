@@ -2,15 +2,15 @@ import interact from "interactjs";
 import React, {
     Fragment,
     useCallback,
-    useContext,
     useEffect,
     useMemo,
     useRef,
 } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
+import { RootState } from "../reducer";
 import { remove, selectById, updateOne } from "../reducer/nodes";
 import CustomTab from "./CustomTab";
-import { context } from "./Provider";
 
 const Tab = (props: {
     nodeId: string;
@@ -20,7 +20,8 @@ const Tab = (props: {
     const { nodeId, selected, onSelect } = props;
     const ref = useRef(null);
 
-    const [nodes, dispatch] = useContext(context)!;
+    const nodes = useSelector((state: RootState) => state.nodes);
+    const dispatch = useDispatch();
     const node = useMemo(() => selectById(nodes, nodeId), [nodeId, nodes]);
 
     const onClick = useCallback(() => {

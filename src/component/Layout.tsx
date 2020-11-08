@@ -1,14 +1,17 @@
-import React, { Fragment, useContext, useEffect, useMemo, useRef } from "react";
+import React, { Fragment, useEffect, useMemo, useRef } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
+import { RootState } from "../reducer";
 import { DIRECTION, NODE_TYPE, selectById, updateOne } from "../reducer/nodes";
-import { context } from "./Provider";
 import Splitter from "./Splitter";
 import Widget from "./Widget";
 
 const Layout = (props: { nodeId: string }) => {
     const { nodeId } = props;
     const ref = useRef<HTMLDivElement>(null);
-    const [nodes, dispatch] = useContext(context)!;
+    // const [nodes, dispatch] = useContext(context)!;
+    const nodes = useSelector((state: RootState) => state.nodes);
+    const dispatch = useDispatch();
     const node = useMemo(() => selectById(nodes, nodeId), [nodeId, nodes]);
     const parent = useMemo(() => {
         if (node?.parentId) {

@@ -208,7 +208,6 @@ const removeNode = (
 ): EntityState<INode> => {
     let nextState = state;
     const node = adapter.getSelectors().selectById(state, nodeId);
-    console.log("test test", node?.id, node?.parentId);
     if (node?.parentId != null) {
         const parent = selectById(nextState, node?.parentId);
         if (parent?.children != null) {
@@ -257,6 +256,7 @@ const removeNode = (
                     ),
                 },
             });
+            selectById(nextState, nodeId);
         }
     }
     return nextState;
@@ -348,7 +348,5 @@ export const {
     remove,
     move,
 } = slice.actions;
-
-export type NodeState = ReturnType<typeof slice.reducer>;
 
 export const { selectById, selectAll } = adapter.getSelectors();

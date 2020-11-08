@@ -1,16 +1,11 @@
 import interact from "interactjs";
-import React, {
-    CSSProperties,
-    useContext,
-    useEffect,
-    useMemo,
-    useRef,
-} from "react";
+import React, { CSSProperties, useEffect, useMemo, useRef } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 import useStateContainer from "../lib/useStateContainer";
+import { RootState } from "../reducer";
 import { DIRECTION, move, selectById, updateOne } from "../reducer/nodes";
 import Panel from "./Panel";
-import { context } from "./Provider";
 import Titlebar from "./Titlebar";
 
 export enum MASK_PART {
@@ -85,7 +80,9 @@ const Widget = (props: { nodeId: string }) => {
         setMaskPart,
     ] = useStateContainer<MASK_PART | null>(null);
 
-    const [nodes, dispatch] = useContext(context)!;
+    const nodes = useSelector((state: RootState) => state.nodes);
+    const dispatch = useDispatch();
+
     const node = useMemo(() => selectById(nodes, nodeId), [nodeId, nodes]);
     const selectedNodeId = useMemo(() => {
         return node?.children

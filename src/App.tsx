@@ -1,8 +1,15 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 import Layout from "./component/Layout";
-import Provider from "./component/Provider";
-import { DIRECTION, INode, NODE_TYPE } from "./reducer/nodes";
+import { RootState } from "./reducer";
+import {
+    addMany,
+    DIRECTION,
+    INode,
+    NODE_TYPE,
+    selectAll,
+} from "./reducer/nodes";
 
 const nodes: INode[] = [
     {
@@ -70,14 +77,17 @@ const nodes: INode[] = [
 ];
 
 function App() {
+    const dispatch = useDispatch();
+    useEffect(() => {
+        dispatch(addMany(nodes));
+    }, [dispatch]);
+    const test = useSelector((state: RootState) => selectAll(state.nodes));
     return (
         <div
             className="App"
             style={{ height: 500, width: 500, backgroundColor: "grey" }}
         >
-            <Provider value={nodes}>
-                <Layout nodeId="root" />
-            </Provider>
+            {test.length === 0 ? null : <Layout nodeId="root" />}
         </div>
     );
 }
