@@ -333,6 +333,31 @@ const shakeTree = (
             ) {
                 nextState = removeNode(nextState, nodeId);
             }
+
+            const parent = selectById(nextState, node.parentId);
+
+            if (
+                node.type === NODE_TYPE.LAYOUT_NODE &&
+                parent?.type === NODE_TYPE.LAYOUT_NODE &&
+                parent.children?.length === 1
+            ) {
+                nextState = removeNode(nextState, nodeId);
+                nextState = node.children?.reduce((prevState, childId) => {
+                    return adapter.updateOne(prevState, {
+                        id: childId,
+                        changes: {
+                            parentId: node?.parentId,
+                        },
+                    });
+                }, nextState);
+                nextState = adapter.updateOne(nextState, {
+                    id: node.parentId,
+                    changes: {
+                        children: node.children,
+                        direction: node.direction,
+                    },
+                });
+            }
         }
     }
     return nextState;
