@@ -138,7 +138,7 @@ const moveNode = (
             nextState = adapter.addOne(nextState, layout);
 
             nextState = replaceNode(nextState, searchNodeId, layoutId);
-
+            // nextState = removeNode(nextState, searchNodeId, false);
             const widgetId = uniqueId();
             const widget: INode = {
                 id: widgetId,
@@ -207,7 +207,8 @@ const removeNode = (
     keepOffset: boolean = true
 ): EntityState<INode> => {
     let nextState = state;
-    const node = adapter.getSelectors().selectById(state, nodeId);
+    console.debug("[Info] removeNode", nodeId);
+    const node = selectById(state, nodeId);
     if (node?.parentId != null) {
         const parent = selectById(nextState, node?.parentId);
         if (parent?.children != null) {
@@ -272,12 +273,22 @@ const replaceNode = (
     let nextState = state;
     const searchNode = selectById(nextState, searchNodeId);
     if (searchNode?.parentId != null) {
-        const parent = selectById(nextState, searchNode.parentId);
-        if (parent?.children != null) {
-            const index = parent.children.findIndex(
+        const replaceParent = selectById(nextState, searchNode.parentId);
+        if (replaceParent?.children != null) {
+            const index = replaceParent.children.findIndex(
                 (childId) => childId === searchNodeId
             );
             if (index !== -1) {
+                console.log(
+                    "test test replaceNode update",
+                    searchNode.parentId,
+                    immutableSplice(
+                        replaceParent.children,
+                        index,
+                        1,
+                        replaceNodeId
+                    )
+                );
                 nextState = adapter.updateMany(nextState, [
                     {
                         id: replaceNodeId,
@@ -290,14 +301,14 @@ const replaceNode = (
                         id: searchNode.parentId,
                         changes: {
                             children: immutableSplice(
-                                parent.children,
+                                replaceParent.children,
                                 index,
+                                1,
                                 replaceNodeId
                             ),
                         },
                     },
                 ]);
-                nextState = removeNode(nextState, searchNodeId, false);
             }
         }
     }
@@ -319,83 +330,20 @@ const shakeTree = (
 
         node = selectById(nextState, nodeId);
         console.debug("[Info] shakeTree", nodeId);
-        if (node?.children != null) {
+        if (node?.children != null && nodeId !== "root") {
             let parent = selectById(nextState, node.parentId);
 
+            if (node.children.length === 0 && node.type !== NODE_TYPE.PANEL) {
+                nextState = removeNode(nextState, nodeId);
+            }
+
             if (
-                node.children.length === 1 &&
-                parent?.children?.length === 1 &&
-                node.id !== "root" &&
-                node.type === NODE_TYPE.LAYOUT_NODE
+                node.type === NODE_TYPE.LAYOUT_NODE &&
+                parent?.type === NODE_TYPE.LAYOUT_NODE &&
+                node.children.length === 1
             ) {
                 nextState = replaceNode(nextState, nodeId, node.children[0]);
-            }
-
-            if (
-                node.children.length === 0 &&
-                nodeId !== "root" &&
-                node.type !== NODE_TYPE.PANEL
-            ) {
                 nextState = removeNode(nextState, nodeId);
-            }
-
-            if (
-                node.type === NODE_TYPE.LAYOUT_NODE &&
-                parent?.type === NODE_TYPE.LAYOUT_NODE &&
-                parent.children?.length === 1
-            ) {
-                nextState = removeNode(nextState, nodeId);
-                nextState = node.children?.reduce((prevState, childId) => {
-                    return adapter.updateOne(prevState, {
-                        id: childId,
-                        changes: {
-                            parentId: node?.parentId,
-                        },
-                    });
-                }, nextState);
-                nextState = adapter.updateOne(nextState, {
-                    id: node.parentId,
-                    changes: {
-                        children: node.children,
-                        direction: node.direction,
-                    },
-                });
-            }
-
-            if (
-                node.type === NODE_TYPE.LAYOUT_NODE &&
-                parent?.type === NODE_TYPE.LAYOUT_NODE &&
-                parent.children?.length !== 1 &&
-                node.direction === parent.direction
-            ) {
-                const index = parent.children?.findIndex(
-                    (childId) => childId === nodeId
-                )!;
-                console.log(node.id, node.parentId, index);
-
-                nextState = removeNode(nextState, nodeId);
-                nextState = node.children?.reduce((prevState, childId) => {
-                    return adapter.updateOne(prevState, {
-                        id: childId,
-                        changes: {
-                            parentId: node?.parentId,
-                        },
-                    });
-                }, nextState);
-
-                parent = selectById(nextState, node.parentId);
-
-                nextState = adapter.updateOne(nextState, {
-                    id: node.parentId,
-                    changes: {
-                        children: immutableSplice(
-                            parent?.children!,
-                            index,
-                            node.children
-                        ),
-                        direction: node.direction,
-                    },
-                });
             }
         }
     }
