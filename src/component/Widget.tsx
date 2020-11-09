@@ -2,9 +2,16 @@ import interact from "interactjs";
 import React, { CSSProperties, useEffect, useMemo, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
+import { moveNode, shakeTree } from "../lib";
 import useStateContainer from "../lib/useStateContainer";
 import { RootState } from "../reducer";
-import { DIRECTION, move, selectById, updateOne } from "../reducer/nodes";
+import {
+    DIRECTION,
+    selectAll,
+    selectById,
+    updateOne,
+    upsertMany,
+} from "../reducer/nodes";
 import Panel from "./Panel";
 import Titlebar from "./Titlebar";
 
@@ -149,14 +156,14 @@ const Widget = (props: { nodeId: string }) => {
             })
             .on("drop", (event) => {
                 setMaskPart(null);
-
-                dispatch(
-                    move({
-                        searchNodeId: nodeId,
-                        moveNodeId: event.dragEvent.target.id,
-                        part: maskPartContainer.current,
-                    })
+                let nextState = moveNode(
+                    nodes,
+                    nodeId,
+                    event.dragEvent.target.id,
+                    maskPartContainer.current
                 );
+                nextState = shakeTree(nextState, "root");
+                dispatch(upsertMany(selectAll(nextState)));
             })
             .on("dropmove", (event) => {
                 const rect = widgetRef.current?.getBoundingClientRect();
